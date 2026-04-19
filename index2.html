@@ -1,1 +1,674 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>SignalMap · Mar 10 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0b0d0f;
+    --bg2:      #0e1114;
+    --bg3:      #121518;
+    --border:   #1e2226;
+    --border2:  #2a2e32;
+    --text:     #d8dde2;
+    --muted:    #778;
+    --dim:      #445;
+    --green:    #22dd88;
+    --red:      #e03355;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+    --font-disp: 'Syne', 'Arial Black', sans-serif;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  html { background: var(--bg); }
+
+  body {
+    font-family: var(--font-mono);
+    background: var(--bg);
+    background-image:
+      repeating-linear-gradient(0deg,   #ffffff03 0px, #ffffff03 1px, transparent 1px, transparent 44px),
+      repeating-linear-gradient(90deg,  #ffffff03 0px, #ffffff03 1px, transparent 1px, transparent 44px);
+    color: var(--text);
+    min-height: 100dvh;
+    padding-bottom: calc(var(--safe-bot) + 24px);
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 200;
+    background: #0b0d0fdd;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: calc(var(--safe-top) + 10px) 16px 10px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .pulse-dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    background: var(--green); box-shadow: 0 0 10px var(--green);
+    animation: pulse 2.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; box-shadow: 0 0 8px var(--green); }
+    50%      { opacity:.5; box-shadow: 0 0 18px var(--green); }
+  }
+  .logo { font-family: var(--font-disp); font-size: 1.35rem; font-weight: 900; letter-spacing: .12em; color: #fff; white-space: nowrap; }
+  .logo span { color: var(--green); }
+  .header-date { font-size: .6rem; color: var(--dim); letter-spacing: .08em; white-space: nowrap; }
+  .legend { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .legend-bar { width: 72px; height: 7px; border-radius: 4px; background: linear-gradient(90deg, #e03355, #333, #22dd88); }
+  .legend-label { font-size: .55rem; color: var(--dim); letter-spacing: .06em; }
+
+  /* ── CONTROLS ── */
+  .controls {
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .search-wrap {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 7px 12px;
+  }
+  .search-icon { font-size: 1.05rem; color: var(--dim); }
+  #search {
+    background: none; border: none; outline: none;
+    color: var(--text); font-family: var(--font-mono); font-size: .8rem; flex: 1;
+    -webkit-appearance: none;
+  }
+  #search::placeholder { color: var(--dim); }
+
+  .ctrl-row { display: flex; align-items: flex-start; gap: 8px; }
+  .ctrl-label { font-size: .58rem; color: var(--dim); letter-spacing: .1em; white-space: nowrap; padding-top: 5px; min-width: 44px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pill {
+    padding: 4px 9px; border-radius: 5px; border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--muted); font-family: var(--font-mono);
+    font-size: .62rem; cursor: pointer; letter-spacing: .04em;
+    transition: all .15s; white-space: nowrap; -webkit-appearance: none;
+  }
+  .pill.active { background: #1a2e22; border-color: var(--green); color: var(--green); }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex; overflow-x: auto; gap: 0;
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+  .stats-bar::-webkit-scrollbar { display: none; }
+  .stat-chip {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 7px 14px; border-right: 1px solid var(--border); flex-shrink: 0;
+  }
+  .chip-label { font-size: .52rem; color: var(--dim); letter-spacing: .1em; }
+  .chip-value { font-size: .82rem; color: var(--text); font-weight: 700; }
+  .chip-value.green { color: var(--green); }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 8px;
+    padding: 14px;
+  }
+  @media (max-width: 400px) {
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 7px; padding: 10px; }
+  }
+
+  /* ── TILE ── */
+  .tile {
+    border-radius: 9px; border: 1px solid;
+    padding: 12px 12px 9px;
+    cursor: pointer; position: relative;
+    transition: transform .18s, box-shadow .18s;
+    animation: fadeUp .35s ease both;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .tile:active { transform: scale(.96) !important; }
+  @media (hover: hover) { .tile:hover { transform: scale(1.03); z-index: 5; } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+
+  .rank { position: absolute; top: 5px; right: 7px; font-size: .52rem; color: var(--dim); }
+  .sector-dot { position: absolute; top: 6px; left: 7px; width: 5px; height: 5px; border-radius: 50%; }
+  .ticker { font-family: var(--font-disp); font-size: 1.25rem; font-weight: 900; letter-spacing: .04em; margin: 4px 0 3px; }
+  .score-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+  .arrow { font-size: .95rem; font-weight: 700; }
+  .score-label { font-size: .58rem; letter-spacing: .05em; opacity: .9; }
+  .bar-bg { height: 3px; background: #ffffff0f; border-radius: 2px; position: relative; margin-bottom: 7px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; }
+  .bar-mid { position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: #ffffff22; transform: translateX(-50%); }
+  .metric { font-size: .63rem; color: var(--muted); margin-bottom: 3px; }
+  .metric strong { }
+  .bulls { display: flex; align-items: center; gap: 4px; }
+  .bull-dot { font-size: .42rem; color: var(--green); }
+  .bull-txt { font-size: .55rem; color: var(--dim); }
+
+  /* ── DETAIL SHEET (bottom sheet on mobile) ── */
+  .sheet-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: #000000aa;
+    animation: overlayIn .2s ease;
+  }
+  .sheet-overlay.open { display: block; }
+  @keyframes overlayIn { from { opacity:0 } to { opacity:1 } }
+
+  .sheet {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 600;
+    background: var(--bg2);
+    border-top: 1px solid var(--border2);
+    border-radius: 18px 18px 0 0;
+    max-height: 88dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 0 calc(var(--safe-bot) + 20px);
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.32,.72,0,1);
+  }
+  .sheet.open { transform: translateY(0); }
+
+  .sheet-handle-bar {
+    display: flex; justify-content: center; padding: 10px 0 4px;
+    position: sticky; top: 0; background: var(--bg2); z-index: 1;
+    border-bottom: 1px solid var(--border);
+  }
+  .handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border2); }
+
+  .sheet-header { padding: 14px 18px 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .sheet-ticker-wrap {}
+  .sheet-ticker { font-family: var(--font-disp); font-size: 2.2rem; font-weight: 900; letter-spacing: .05em; line-height: 1; display: flex; align-items: center; gap: 8px; }
+  .sheet-ticker-arrow { font-size: 1.6rem; }
+  .sheet-company { font-size: .7rem; color: var(--muted); margin-top: 4px; }
+  .sheet-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .tag { padding: 2px 8px; border-radius: 4px; background: #1a1e22; border: 1px solid var(--border2); font-size: .58rem; color: var(--muted); }
+
+  .score-ring { flex-shrink: 0; }
+
+  .sheet-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    padding: 0 14px 14px;
+  }
+  @media (max-width: 360px) { .sheet-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card { background: var(--bg3); border-radius: 7px; padding: 9px 10px; border: 1px solid var(--border); }
+  .sc-label { font-size: .55rem; color: var(--dim); letter-spacing: .08em; margin-bottom: 3px; }
+  .sc-value { font-size: .85rem; color: var(--text); font-weight: 700; }
+
+  .section-title { font-size: .58rem; color: var(--dim); letter-spacing: .12em; margin-bottom: 9px; }
+  .analyst-section { padding: 0 14px 14px; }
+  .analyst-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .al-label { font-size: .63rem; color: var(--muted); width: 78px; flex-shrink: 0; }
+  .al-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .al-bar-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+  .al-count { font-size: .63rem; font-weight: 700; width: 22px; text-align: right; }
+
+  .range-section { padding: 0 14px 14px; }
+  .range-chart { background: var(--bg3); border-radius: 8px; padding: 28px 14px 10px; position: relative; border: 1px solid var(--border); }
+  .range-pin {
+    position: absolute; width: 2px; top: 8px; bottom: 28px;
+    transform: translateX(-50%); border-radius: 1px;
+  }
+  .range-pin-label {
+    position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    font-size: .5rem; white-space: nowrap; font-family: var(--font-mono);
+  }
+  .range-zone { position: absolute; top: 8px; bottom: 28px; border-radius: 3px; }
+  .range-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .rl-item { font-size: .57rem; font-family: var(--font-mono); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: calc(var(--safe-bot) + 16px); left: 50%; transform: translateX(-50%);
+    background: #1a1e22ee; border: 1px solid var(--border2); border-radius: 8px;
+    padding: 8px 16px; font-size: .68rem; color: var(--muted);
+    pointer-events: none; opacity: 0; transition: opacity .25s;
+    white-space: nowrap; z-index: 900;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-left">
+    <div class="pulse-dot"></div>
+    <span class="logo">SIGNAL<span>MAP</span></span>
+    <span class="header-date">MAR 10 2026</span>
+  </div>
+  <div class="legend">
+    <span class="legend-label">WEAK</span>
+    <div class="legend-bar"></div>
+    <span class="legend-label">STRONG</span>
+  </div>
+</header>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="search" id="search" placeholder="Search ticker or company…" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  <div class="ctrl-row">
+    <span class="ctrl-label">SECTOR</span>
+    <div class="pills" id="sector-pills"></div>
+  </div>
+  <div class="ctrl-row">
+    <span class="ctrl-label">SORT</span>
+    <div class="pills" id="sort-pills">
+      <button class="pill active" data-sort="score">Upside Score</button>
+      <button class="pill" data-sort="mcap">Mkt Cap</button>
+      <button class="pill" data-sort="upside">Analyst %</button>
+    </div>
+  </div>
+  <div class="ctrl-row">
+    <span class="ctrl-label">COLOR</span>
+    <div class="pills" id="color-pills">
+      <button class="pill active" data-color="score">Composite</button>
+      <button class="pill" data-color="upside">Upside %</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="stats-bar"></div>
+
+<!-- GRID -->
+<div class="grid" id="grid"></div>
+
+<!-- BOTTOM SHEET -->
+<div class="sheet-overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle-bar"><div class="handle"></div></div>
+  <div id="sheet-content"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">Tap a tile for details</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const RAW = [
+  { ticker:"NVDA",  company:"NVIDIA Corporation",             sector:"Technology",          industry:"Semiconductors",                      price:182.65,  hi52:212.19,  lo52:86.62,   mcap:4439.31, pe:36.24,  analysts:56, sb:11, b:49, h:3,  s:1, ss:0, tgtLow:140,    tgtAvg:266.35,  tgtHigh:380,   upsideLow:-23.4, upsideAvg:45.8,  upsideHigh:108.0 },
+  { ticker:"GOOGL", company:"Alphabet Inc.",                  sector:"Comm Services",       industry:"Internet Content & Information",      price:306.36,  hi52:349.0,   lo52:140.53,  mcap:3706.04, pe:28.34,  analysts:56, sb:13, b:45, h:9,  s:0, ss:0, tgtLow:185,    tgtAvg:376.95,  tgtHigh:443,   upsideLow:-39.6, upsideAvg:23.0,  upsideHigh:44.6 },
+  { ticker:"GOOG",  company:"Alphabet Inc. (C)",              sector:"Comm Services",       industry:"Internet Content & Information",      price:306.01,  hi52:350.15,  lo52:142.66,  mcap:3701.80, pe:28.33,  analysts:18, sb:13, b:45, h:9,  s:0, ss:0, tgtLow:185,    tgtAvg:361.22,  tgtHigh:405,   upsideLow:-39.5, upsideAvg:18.0,  upsideHigh:32.3 },
+  { ticker:"MSFT",  company:"Microsoft Corporation",          sector:"Technology",          industry:"Software - Infrastructure",           price:409.41,  hi52:555.45,  lo52:344.79,  mcap:3042.89, pe:25.60,  analysts:53, sb:12, b:44, h:1,  s:0, ss:0, tgtLow:392,    tgtAvg:594.62,  tgtHigh:730,   upsideLow:-4.3,  upsideAvg:45.2,  upsideHigh:78.3 },
+  { ticker:"AMZN",  company:"Amazon.com, Inc.",               sector:"Consumer Cyclical",   industry:"Internet Retail",                    price:213.49,  hi52:258.60,  lo52:161.38,  mcap:2291.80, pe:29.82,  analysts:62, sb:16, b:51, h:3,  s:0, ss:0, tgtLow:175,    tgtAvg:280.47,  tgtHigh:360,   upsideLow:-18.0, upsideAvg:31.4,  upsideHigh:68.6 },
+  { ticker:"AVGO",  company:"Broadcom Inc.",                  sector:"Technology",          industry:"Semiconductors",                      price:345.75,  hi52:414.61,  lo52:138.10,  mcap:1639.30, pe:72.64,  analysts:44, sb:9,  b:37, h:2,  s:0, ss:0, tgtLow:360,    tgtAvg:467.99,  tgtHigh:630,   upsideLow:4.1,   upsideAvg:35.4,  upsideHigh:82.2 },
+  { ticker:"META",  company:"Meta Platforms, Inc.",           sector:"Comm Services",       industry:"Internet Content & Information",      price:647.39,  hi52:796.25,  lo52:479.80,  mcap:1637.61, pe:27.58,  analysts:59, sb:10, b:50, h:7,  s:0, ss:0, tgtLow:676,    tgtAvg:862.25,  tgtHigh:1144,  upsideLow:4.4,   upsideAvg:33.2,  upsideHigh:76.7 },
+  { ticker:"WMT",   company:"Walmart Inc.",                   sector:"Consumer Defensive",  industry:"Discount Stores",                    price:124.34,  hi52:134.69,  lo52:79.81,   mcap:991.34,  pe:45.38,  analysts:41, sb:9,  b:31, h:1,  s:1, ss:0, tgtLow:62,     tgtAvg:135.90,  tgtHigh:150,   upsideLow:-50.1, upsideAvg:9.3,   upsideHigh:20.6 },
+  { ticker:"V",     company:"Visa Inc.",                      sector:"Financial Services",  industry:"Credit Services",                    price:315.97,  hi52:375.51,  lo52:299.00,  mcap:609.20,  pe:29.75,  analysts:36, sb:6,  b:27, h:7,  s:0, ss:0, tgtLow:323,    tgtAvg:400.47,  tgtHigh:450,   upsideLow:2.2,   upsideAvg:26.7,  upsideHigh:42.4 },
+  { ticker:"MA",    company:"Mastercard Incorporated",        sector:"Financial Services",  industry:"Credit Services",                    price:517.72,  hi52:601.77,  lo52:465.59,  mcap:462.03,  pe:31.36,  analysts:35, sb:5,  b:25, h:9,  s:0, ss:0, tgtLow:550,    tgtAvg:662.80,  tgtHigh:739,   upsideLow:6.2,   upsideAvg:28.0,  upsideHigh:42.7 },
+  { ticker:"GE",    company:"GE Aerospace",                   sector:"Industrials",         industry:"Aerospace & Defense",                price:321.93,  hi52:348.48,  lo52:159.36,  mcap:339.58,  pe:40.14,  analysts:18, sb:2,  b:14, h:1,  s:0, ss:2, tgtLow:290,    tgtAvg:362.83,  tgtHigh:425,   upsideLow:-9.9,  upsideAvg:12.7,  upsideHigh:32.0 },
+  { ticker:"TMO",   company:"Thermo Fisher Scientific",       sector:"Healthcare",          industry:"Diagnostics & Research",             price:509.97,  hi52:643.99,  lo52:385.46,  mcap:189.45,  pe:28.78,  analysts:24, sb:4,  b:17, h:5,  s:0, ss:0, tgtLow:595,    tgtAvg:663.96,  tgtHigh:750,   upsideLow:16.7,  upsideAvg:30.2,  upsideHigh:47.1 },
+  { ticker:"TJX",   company:"The TJX Companies, Inc.",        sector:"Consumer Cyclical",   industry:"Apparel Retail",                     price:158.14,  hi52:162.68,  lo52:112.10,  mcap:176.00,  pe:32.41,  analysts:18, sb:3,  b:16, h:1,  s:1, ss:0, tgtLow:100,    tgtAvg:171.78,  tgtHigh:193,   upsideLow:-36.8, upsideAvg:8.6,   upsideHigh:22.0 },
+  { ticker:"ANET",  company:"Arista Networks, Inc.",          sector:"Technology",          industry:"Computer Hardware",                   price:137.17,  hi52:164.94,  lo52:59.43,   mcap:172.74,  pe:49.88,  analysts:24, sb:5,  b:18, h:5,  s:0, ss:0, tgtLow:140,    tgtAvg:178.06,  tgtHigh:220,   upsideLow:2.1,   upsideAvg:29.8,  upsideHigh:60.4 },
+  { ticker:"DHR",   company:"Danaher Corporation",            sector:"Healthcare",          industry:"Diagnostics & Research",             price:198.80,  hi52:242.80,  lo52:171.00,  mcap:140.58,  pe:39.60,  analysts:22, sb:4,  b:18, h:3,  s:0, ss:0, tgtLow:220,    tgtAvg:264.91,  tgtHigh:310,   upsideLow:10.7,  upsideAvg:33.3,  upsideHigh:55.9 },
+  { ticker:"SPGI",  company:"S&P Global Inc.",                sector:"Financial Services",  industry:"Financial Data & Stock Exchanges",    price:445.28,  hi52:579.05,  lo52:381.61,  mcap:134.83,  pe:30.37,  analysts:21, sb:6,  b:16, h:1,  s:0, ss:0, tgtLow:480,    tgtAvg:537.90,  tgtHigh:625,   upsideLow:7.8,   upsideAvg:20.8,  upsideHigh:40.4 },
+  { ticker:"NOW",   company:"ServiceNow, Inc.",               sector:"Technology",          industry:"Software - Application",             price:121.93,  hi52:211.48,  lo52:98.00,   mcap:128.65,  pe:73.01,  analysts:40, sb:8,  b:34, h:4,  s:1, ss:0, tgtLow:120,    tgtAvg:189.67,  tgtHigh:260,   upsideLow:-1.6,  upsideAvg:55.6,  upsideHigh:113.2 },
+  { ticker:"BSX",   company:"Boston Scientific Corp.",        sector:"Healthcare",          industry:"Medical Devices",                    price:71.90,   hi52:109.50,  lo52:69.52,   mcap:106.69,  pe:37.06,  analysts:33, sb:7,  b:25, h:2,  s:0, ss:0, tgtLow:83,     tgtAvg:104.24,  tgtHigh:124,   upsideLow:15.4,  upsideAvg:45.0,  upsideHigh:72.5 },
+  { ticker:"HWM",   company:"Howmet Aerospace Inc.",          sector:"Industrials",         industry:"Aerospace & Defense",                price:254.14,  hi52:267.31,  lo52:105.04,  mcap:102.29,  pe:68.69,  analysts:20, sb:4,  b:16, h:3,  s:0, ss:0, tgtLow:214.92, tgtAvg:278.25,  tgtHigh:315,   upsideLow:-15.4, upsideAvg:9.5,   upsideHigh:23.9 },
+  { ticker:"ICE",   company:"Intercontinental Exchange",      sector:"Financial Services",  industry:"Financial Data & Stock Exchanges",    price:165.80,  hi52:189.35,  lo52:143.17,  mcap:94.54,   pe:28.73,  analysts:14, sb:5,  b:8,  h:2,  s:0, ss:0, tgtLow:174,    tgtAvg:196.57,  tgtHigh:244,   upsideLow:4.9,   upsideAvg:18.6,  upsideHigh:47.2 },
+  { ticker:"CDNS",  company:"Cadence Design Systems",         sector:"Technology",          industry:"Software - Application",             price:298.05,  hi52:376.45,  lo52:221.56,  mcap:82.22,   pe:73.23,  analysts:26, sb:5,  b:16, h:5,  s:0, ss:0, tgtLow:275,    tgtAvg:371.82,  tgtHigh:410,   upsideLow:-7.7,  upsideAvg:24.8,  upsideHigh:37.6 },
+  { ticker:"VST",   company:"Vistra Corp.",                   sector:"Utilities",           industry:"Utilities - Independent Power",       price:163.62,  hi52:219.82,  lo52:90.51,   mcap:55.44,   pe:58.86,  analysts:19, sb:4,  b:15, h:2,  s:1, ss:0, tgtLow:97,     tgtAvg:233.42,  tgtHigh:293,   upsideLow:-40.7, upsideAvg:42.7,  upsideHigh:79.1 },
+  { ticker:"ADSK",  company:"Autodesk, Inc.",                 sector:"Technology",          industry:"Software - Application",             price:260.75,  hi52:329.09,  lo52:215.01,  mcap:55.28,   pe:49.95,  analysts:31, sb:4,  b:21, h:7,  s:0, ss:0, tgtLow:250,    tgtAvg:331.75,  tgtHigh:460,   upsideLow:-4.1,  upsideAvg:27.2,  upsideHigh:76.4 },
+  { ticker:"MPWR",  company:"Monolithic Power Systems",       sector:"Technology",          industry:"Semiconductors",                      price:1062.00, hi52:1256.22, lo52:438.86,  mcap:52.16,   pe:79.37,  analysts:14, sb:2,  b:11, h:2,  s:0, ss:1, tgtLow:1000,   tgtAvg:1328.29, tgtHigh:1500,  upsideLow:-5.8,  upsideAvg:25.1,  upsideHigh:41.2 },
+  { ticker:"FANG",  company:"Diamondback Energy, Inc.",       sector:"Energy",              industry:"Oil & Gas E&P",                      price:182.86,  hi52:186.66,  lo52:114.00,  mcap:52.03,   pe:31.53,  analysts:30, sb:8,  b:21, h:2,  s:0, ss:0, tgtLow:171,    tgtAvg:189.07,  tgtHigh:223,   upsideLow:-6.5,  upsideAvg:3.4,   upsideHigh:22.0 },
+  { ticker:"NXPI",  company:"NXP Semiconductors N.V.",        sector:"Technology",          industry:"Semiconductors",                      price:205.25,  hi52:256.36,  lo52:148.09,  mcap:51.87,   pe:25.82,  analysts:31, sb:7,  b:21, h:5,  s:0, ss:0, tgtLow:210,    tgtAvg:262.13,  tgtHigh:313,   upsideLow:2.3,   upsideAvg:27.7,  upsideHigh:52.5 },
+  { ticker:"XEL",   company:"Xcel Energy Inc.",               sector:"Utilities",           industry:"Utilities - Regulated Electric",      price:82.10,   hi52:84.23,   lo52:65.21,   mcap:51.22,   pe:24.01,  analysts:17, sb:3,  b:12, h:2,  s:0, ss:1, tgtLow:73,     tgtAvg:88.94,   tgtHigh:95,    upsideLow:-11.1, upsideAvg:8.3,   upsideHigh:15.7 },
+  { ticker:"TRGP",  company:"Targa Resources Corp.",          sector:"Energy",              industry:"Oil & Gas Midstream",                price:234.74,  hi52:250.00,  lo52:144.14,  mcap:50.46,   pe:27.65,  analysts:20, sb:5,  b:16, h:1,  s:0, ss:0, tgtLow:207,    tgtAvg:242.45,  tgtHigh:298,   upsideLow:-11.8, upsideAvg:3.3,   upsideHigh:26.9 },
+  { ticker:"FIX",   company:"Comfort Systems USA, Inc.",      sector:"Industrials",         industry:"Engineering & Construction",         price:1372.40, hi52:1500.00, lo52:276.44,  mcap:48.41,   pe:44.24,  analysts:5,  sb:0,  b:6,  h:2,  s:0, ss:0, tgtLow:1611,   tgtAvg:1696.20, tgtHigh:1800,  upsideLow:17.4,  upsideAvg:23.6,  upsideHigh:31.2 },
+  { ticker:"DDOG",  company:"Datadog, Inc.",                  sector:"Technology",          industry:"Software - Application",             price:128.56,  hi52:201.69,  lo52:81.63,   mcap:45.33,   pe:414.71, analysts:43, sb:9,  b:31, h:5,  s:0, ss:0, tgtLow:121,    tgtAvg:182.43,  tgtHigh:260,   upsideLow:-5.9,  upsideAvg:41.9,  upsideHigh:102.2 },
+  { ticker:"TTWO",  company:"Take-Two Interactive",           sector:"Comm Services",       industry:"Electronic Gaming & Multimedia",     price:214.63,  hi52:264.79,  lo52:188.56,  mcap:39.74,   pe:null,   analysts:28, sb:3,  b:24, h:1,  s:1, ss:0, tgtLow:165,    tgtAvg:276.81,  tgtHigh:300,   upsideLow:-23.1, upsideAvg:29.0,  upsideHigh:39.8 },
+  { ticker:"DAL",   company:"Delta Air Lines, Inc.",          sector:"Industrials",         industry:"Airlines",                           price:60.58,   hi52:76.39,   lo52:34.74,   mcap:39.57,   pe:7.91,   analysts:25, sb:4,  b:20, h:0,  s:1, ss:0, tgtLow:47,     tgtAvg:81.81,   tgtHigh:90,    upsideLow:-22.4, upsideAvg:35.0,  upsideHigh:48.6 },
+  { ticker:"LYV",   company:"Live Nation Entertainment",      sector:"Comm Services",       industry:"Entertainment",                      price:165.80,  hi52:175.25,  lo52:112.88,  mcap:38.93,   pe:null,   analysts:22, sb:2,  b:16, h:3,  s:1, ss:0, tgtLow:140,    tgtAvg:181.27,  tgtHigh:204,   upsideLow:-15.6, upsideAvg:9.3,   upsideHigh:23.0 },
+  { ticker:"UAL",   company:"United Airlines Holdings",       sector:"Industrials",         industry:"Airlines",                           price:94.52,   hi52:119.21,  lo52:52.00,   mcap:30.60,   pe:9.27,   analysts:24, sb:4,  b:19, h:1,  s:1, ss:0, tgtLow:98,     tgtAvg:137.98,  tgtHigh:156,   upsideLow:3.7,   upsideAvg:46.0,  upsideHigh:65.0 },
+  { ticker:"DXCM",  company:"DexCom, Inc.",                   sector:"Healthcare",          industry:"Medical Devices",                    price:68.74,   hi52:89.98,   lo52:54.11,   mcap:26.81,   pe:32.58,  analysts:26, sb:5,  b:20, h:4,  s:0, ss:0, tgtLow:68,     tgtAvg:85.85,   tgtHigh:112,   upsideLow:-1.1,  upsideAvg:24.9,  upsideHigh:62.9 },
+  { ticker:"STLD",  company:"Steel Dynamics, Inc.",           sector:"Basic Materials",     industry:"Steel",                              price:182.36,  hi52:208.47,  lo52:103.17,  mcap:26.62,   pe:22.74,  analysts:11, sb:2,  b:8,  h:3,  s:0, ss:0, tgtLow:180,    tgtAvg:194.92,  tgtHigh:210,   upsideLow:-1.3,  upsideAvg:6.9,   upsideHigh:15.2 },
+  { ticker:"EXE",   company:"Expand Energy Corporation",      sector:"Energy",              industry:"Oil & Gas E&P",                      price:107.87,  hi52:126.62,  lo52:91.02,   mcap:25.93,   pe:14.10,  analysts:27, sb:6,  b:19, h:2,  s:0, ss:1, tgtLow:86,     tgtAvg:131.52,  tgtHigh:152,   upsideLow:-20.3, upsideAvg:21.9,  upsideHigh:40.9 },
+  { ticker:"Q",     company:"Qnity Electronics, Inc.",        sector:"Technology",          industry:"Semiconductor Equipment",            price:114.25,  hi52:140.60,  lo52:70.50,   mcap:23.95,   pe:34.62,  analysts:9,  sb:2,  b:7,  h:0,  s:0, ss:0, tgtLow:130,    tgtAvg:140.22,  tgtHigh:150,   upsideLow:13.8,  upsideAvg:22.7,  upsideHigh:31.3 },
+  { ticker:"BG",    company:"Bunge Global SA",                sector:"Consumer Defensive",  industry:"Farm Products",                      price:118.79,  hi52:124.78,  lo52:68.33,   mcap:22.99,   pe:24.05,  analysts:10, sb:3,  b:5,  h:1,  s:0, ss:0, tgtLow:116,    tgtAvg:129.60,  tgtHigh:145,   upsideLow:-2.3,  upsideAvg:9.1,   upsideHigh:22.1 },
+  { ticker:"SW",    company:"Smurfit Westrock Plc",           sector:"Consumer Cyclical",   industry:"Packaging & Containers",             price:42.09,   hi52:52.65,   lo52:32.73,   mcap:22.07,   pe:32.38,  analysts:14, sb:5,  b:11, h:0,  s:0, ss:0, tgtLow:51,     tgtAvg:59.07,   tgtHigh:68,    upsideLow:21.2,  upsideAvg:40.3,  upsideHigh:61.6 },
+  { ticker:"DD",    company:"DuPont de Nemours, Inc.",        sector:"Basic Materials",     industry:"Specialty Chemicals",                price:45.24,   hi52:52.66,   lo52:22.50,   mcap:18.95,   pe:215.43, analysts:16, sb:2,  b:12, h:3,  s:0, ss:0, tgtLow:50,     tgtAvg:56.12,   tgtHigh:64,    upsideLow:10.5,  upsideAvg:24.1,  upsideHigh:41.5 },
+  { ticker:"WST",   company:"West Pharmaceutical Services",   sector:"Healthcare",          industry:"Medical Instruments",                price:248.06,  hi52:322.34,  lo52:187.43,  mcap:17.87,   pe:36.53,  analysts:14, sb:2,  b:11, h:3,  s:0, ss:0, tgtLow:265,    tgtAvg:318.36,  tgtHigh:375,   upsideLow:6.8,   upsideAvg:28.3,  upsideHigh:51.2 },
+  { ticker:"PODD",  company:"Insulet Corporation",            sector:"Healthcare",          industry:"Medical Devices",                    price:240.38,  hi52:354.88,  lo52:230.05,  mcap:16.92,   pe:68.10,  analysts:25, sb:5,  b:19, h:2,  s:0, ss:0, tgtLow:286,    tgtAvg:354.40,  tgtHigh:435,   upsideLow:19.0,  upsideAvg:47.4,  upsideHigh:81.0 },
+  { ticker:"TRMB",  company:"Trimble Inc.",                   sector:"Technology",          industry:"Scientific & Technical Instruments", price:70.45,   hi52:87.50,   lo52:52.91,   mcap:16.76,   pe:39.80,  analysts:12, sb:4,  b:9,  h:0,  s:0, ss:0, tgtLow:79,     tgtAvg:91.00,   tgtHigh:103,   upsideLow:12.1,  upsideAvg:29.2,  upsideHigh:46.2 },
+  { ticker:"HAS",   company:"Hasbro, Inc.",                   sector:"Consumer Cyclical",   industry:"Leisure",                            price:95.78,   hi52:106.98,  lo52:49.00,   mcap:13.47,   pe:null,   analysts:14, sb:2,  b:10, h:2,  s:0, ss:0, tgtLow:95,     tgtAvg:114.50,  tgtHigh:124,   upsideLow:-0.8,  upsideAvg:19.5,  upsideHigh:29.5 },
+  { ticker:"ERIE",  company:"Erie Indemnity Company",         sector:"Financial Services",  industry:"Insurance Brokers",                  price:255.66,  hi52:456.93,  lo52:247.00,  mcap:13.37,   pe:23.92,  analysts:1,  sb:0,  b:1,  h:0,  s:0, ss:0, tgtLow:null,   tgtAvg:null,    tgtHigh:null,  upsideLow:null,  upsideAvg:null,  upsideHigh:null },
+  { ticker:"WYNN",  company:"Wynn Resorts, Limited",          sector:"Consumer Cyclical",   industry:"Resorts & Casinos",                  price:101.56,  hi52:134.72,  lo52:65.25,   mcap:10.56,   pe:32.34,  analysts:18, sb:3,  b:15, h:1,  s:0, ss:0, tgtLow:118,    tgtAvg:141.83,  tgtHigh:161,   upsideLow:16.2,  upsideAvg:39.7,  upsideHigh:58.5 },
+];
+
+// ─── SECTOR COLORS ───────────────────────────────────────────────────────────
+const SECTOR_COLORS = {
+  "Technology":          "#4f8ef7",
+  "Comm Services":       "#c47cf7",
+  "Consumer Cyclical":   "#f7a04f",
+  "Consumer Defensive":  "#66c99e",
+  "Healthcare":          "#4fcff7",
+  "Financial Services":  "#f7d44f",
+  "Industrials":         "#f77b4f",
+  "Energy":              "#f7604f",
+  "Utilities":           "#7cf7b8",
+  "Basic Materials":     "#a8b4c0",
+};
+
+// ─── SCORING ─────────────────────────────────────────────────────────────────
+function computeScore(d) {
+  const upsideScore = d.upsideAvg != null ? Math.tanh(d.upsideAvg / 50) : 0;
+  const totalRated = (d.sb + d.b + d.h + d.s + d.ss) || 1;
+  const bullScore = (d.sb * 2 + d.b) / (totalRated * 2);
+  const bearPenalty = (d.s + d.ss * 2) / (totalRated * 2);
+  const convictionScore = bullScore - bearPenalty;
+  const range = d.hi52 - d.lo52;
+  const posInRange = range > 0 ? (d.price - d.lo52) / range : 0.5;
+  const rangeScore = 0.5 - posInRange;
+  return 0.60 * upsideScore + 0.30 * convictionScore + 0.10 * rangeScore;
+}
+
+function scoreToColor(score) {
+  if (score > 0) {
+    const t = Math.min(score, 1);
+    return `rgb(${Math.round(20+(1-t)*40)},${Math.round(180+t*55)},${Math.round(80+(1-t)*30)})`;
+  } else {
+    const t = Math.min(-score, 1);
+    return `rgb(${Math.round(220+t*35)},${Math.round(60-t*40)},${Math.round(60-t*40)})`;
+  }
+}
+
+function scoreLabel(s) {
+  if (s >= 0.5)  return "Strong Buy";
+  if (s >= 0.25) return "Buy";
+  if (s >= 0.05) return "Mild Buy";
+  if (s >= -0.05) return "Neutral";
+  if (s >= -0.25) return "Mild Sell";
+  return "Weak";
+}
+
+const fmt  = (n,d=1) => n==null||isNaN(n) ? "N/A" : (n>=0?"+":"")+n.toFixed(d)+"%";
+const fmtP = n => n==null||isNaN(n) ? "N/A" : "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtB = n => {
+  if (n==null||isNaN(n)) return "N/A";
+  if (n>=1000) return "$"+(n/1000).toFixed(1)+"T";
+  return "$"+n.toFixed(1)+"B";
+};
+
+// ─── ENRICH ──────────────────────────────────────────────────────────────────
+const DATA = RAW.map(d => ({ ...d, score: computeScore(d) }));
+const SECTORS = ["All", ...Array.from(new Set(DATA.map(d=>d.sector))).sort()];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = { sector:"All", sort:"score", color:"score", search:"", selected:null };
+
+// ─── FILTER + SORT ───────────────────────────────────────────────────────────
+function getFiltered() {
+  let d = DATA.slice();
+  if (state.sector !== "All") d = d.filter(x => x.sector === state.sector);
+  if (state.search.trim()) {
+    const q = state.search.trim().toUpperCase();
+    d = d.filter(x => x.ticker.includes(q) || x.company.toUpperCase().includes(q));
+  }
+  if (state.sort === "mcap")   d.sort((a,b) => b.mcap - a.mcap);
+  else if (state.sort === "upside") d.sort((a,b) => (b.upsideAvg??-999) - (a.upsideAvg??-999));
+  else d.sort((a,b) => b.score - a.score);
+  return d;
+}
+
+function getColor(d) {
+  if (state.color === "upside") {
+    const s = d.upsideAvg != null ? Math.tanh(d.upsideAvg / 60) : 0;
+    return scoreToColor(s);
+  }
+  return scoreToColor(d.score);
+}
+
+// ─── RENDER SECTOR PILLS ─────────────────────────────────────────────────────
+function renderSectorPills() {
+  const el = document.getElementById("sector-pills");
+  el.innerHTML = SECTORS.map(s =>
+    `<button class="pill${s===state.sector?" active":""}" data-sector="${s}">${s}</button>`
+  ).join("");
+  el.querySelectorAll(".pill").forEach(btn =>
+    btn.addEventListener("click", () => { state.sector = btn.dataset.sector; render(); })
+  );
+}
+
+// ─── RENDER STATS BAR ────────────────────────────────────────────────────────
+function renderStats(filtered) {
+  const withUpside = filtered.filter(d => d.upsideAvg != null);
+  const avgUpside = withUpside.length
+    ? withUpside.reduce((a,d)=>a+d.upsideAvg,0) / withUpside.length : 0;
+  const topUpside = filtered[0]?.upsideAvg;
+  const strongBuy = filtered.filter(d => {
+    const t = d.sb+d.b+d.h+d.s+d.ss;
+    return t>0 && (d.sb/t)>0.3;
+  }).length;
+  document.getElementById("stats-bar").innerHTML = [
+    { label:"SHOWN",       value: filtered.length,           cls:"" },
+    { label:"TOP UPSIDE",  value: fmt(topUpside),            cls:"green" },
+    { label:"AVG UPSIDE",  value: fmt(avgUpside),            cls:"" },
+    { label:"STRONG BUY",  value: strongBuy,                 cls:"" },
+  ].map(c => `<div class="stat-chip">
+    <span class="chip-label">${c.label}</span>
+    <span class="chip-value ${c.cls}">${c.value}</span>
+  </div>`).join("");
+}
+
+// ─── RENDER GRID ─────────────────────────────────────────────────────────────
+function renderGrid(filtered) {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = filtered.map((d, i) => {
+    const col = getColor(d);
+    const lbl = scoreLabel(d.score);
+    const arrow = d.score > 0.1 ? "↑" : d.score < -0.1 ? "↓" : "→";
+    const totalA = d.sb+d.b+d.h+d.s+d.ss;
+    const bullPct = totalA > 0 ? Math.round((d.sb+d.b)/totalA*100) : 0;
+    const barW = Math.abs(d.score)*100;
+    const barML = d.score < 0 ? (1+d.score)*100 : 50;
+    const sdot = SECTOR_COLORS[d.sector] || "#aaa";
+
+    return `<div class="tile" data-i="${i}" style="
+      background:linear-gradient(135deg,${col}18 0%,${col}2e 100%);
+      border-color:${col}55;
+      box-shadow:0 2px 10px ${col}22;
+      animation-delay:${i*15}ms">
+      <div class="rank">#${i+1}</div>
+      <div class="sector-dot" style="background:${sdot}" title="${d.sector}"></div>
+      <div class="ticker" style="color:${col}">${d.ticker}</div>
+      <div class="score-row">
+        <span class="arrow" style="color:${col}">${arrow}</span>
+        <span class="score-label" style="color:${col}">${lbl}</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill" style="width:${barW}%;margin-left:${d.score>=0?50:barML}%;background:${col}"></div>
+        <div class="bar-mid"></div>
+      </div>
+      <div class="metric">Tgt: <strong style="color:${col}">${fmt(d.upsideAvg)}</strong></div>
+      <div class="bulls">
+        <span class="bull-dot">●</span>
+        <span class="bull-txt">${bullPct}% Bull · ${d.analysts||totalA} analysts</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  grid.querySelectorAll(".tile").forEach(el => {
+    el.addEventListener("click", () => {
+      const idx = parseInt(el.dataset.i);
+      openSheet(filtered[idx]);
+    });
+  });
+}
+
+// ─── SHEET ───────────────────────────────────────────────────────────────────
+function openSheet(d) {
+  state.selected = d;
+  const col = getColor(d);
+  const arrow = d.score > 0.1 ? "↑" : d.score < -0.1 ? "↓" : "→";
+  const totalA = d.sb+d.b+d.h+d.s+d.ss;
+  const scoreVal = Math.round(d.score * 100);
+  const circ = 2 * Math.PI * 42;
+  const dash = Math.abs(d.score) * circ;
+
+  const stats = [
+    {l:"Current Price", v:fmtP(d.price), accent:true},
+    {l:"Market Cap",    v:fmtB(d.mcap)},
+    {l:"P/E Ratio",     v:d.pe?d.pe.toFixed(2):"N/A"},
+    {l:"52W High",      v:fmtP(d.hi52)},
+    {l:"52W Low",       v:fmtP(d.lo52)},
+    {l:"Analysts",      v:d.analysts||totalA},
+    {l:"Avg Target",    v:fmtP(d.tgtAvg), accent:true},
+    {l:"High Target",   v:fmtP(d.tgtHigh), accent:true},
+    {l:"Upside Avg",    v:fmt(d.upsideAvg), accent:true},
+    {l:"Upside High",   v:fmt(d.upsideHigh), accent:true},
+    {l:"Upside Low",    v:fmt(d.upsideLow)},
+    {l:"Target Low",    v:fmtP(d.tgtLow)},
+  ];
+
+  const analysts = [
+    {l:"Strong Buy", c:d.sb,  col:"#22dd88"},
+    {l:"Buy",        c:d.b,   col:"#66e0aa"},
+    {l:"Hold",       c:d.h,   col:"#888"},
+    {l:"Sell",       c:d.s,   col:"#e06666"},
+    {l:"Strong Sell",c:d.ss,  col:"#dd2244"},
+  ];
+
+  // Price range chart data
+  const lo = Math.min(d.lo52, d.tgtLow??d.lo52) * 0.95;
+  const hi = Math.max(d.hi52, d.tgtHigh??d.hi52) * 1.02;
+  const range = hi - lo;
+  const pct = v => v!=null ? ((v-lo)/range*100) : null;
+
+  const pins = [
+    {l:"52W Lo", v:d.lo52,   c:"#f77"},
+    {l:"Now",    v:d.price,  c:col},
+    {l:"52W Hi", v:d.hi52,   c:"#aaa"},
+    {l:"T.Low",  v:d.tgtLow, c:"#44bb88"},
+    {l:"T.Avg",  v:d.tgtAvg, c:"#22dd88"},
+    {l:"T.Hi",   v:d.tgtHigh,c:"#00ff99"},
+  ].filter(p=>p.v!=null);
+
+  document.getElementById("sheet-content").innerHTML = `
+    <div class="sheet-header">
+      <div class="sheet-ticker-wrap">
+        <div class="sheet-ticker" style="color:${col}">${d.ticker}<span class="sheet-ticker-arrow">${arrow}</span></div>
+        <div class="sheet-company">${d.company}</div>
+        <div class="sheet-tags">
+          <span class="tag">${d.sector}</span>
+          <span class="tag">${d.industry}</span>
+          <span class="tag">STRONG BUY</span>
+        </div>
+      </div>
+      <div class="score-ring">
+        <svg width="86" height="86" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#ffffff11" stroke-width="8"/>
+          <circle cx="50" cy="50" r="42" fill="none"
+            stroke="${col}" stroke-width="8"
+            stroke-dasharray="${dash} ${circ}"
+            stroke-linecap="round"
+            transform="rotate(-90 50 50)"/>
+          <text x="50" y="47" text-anchor="middle" fill="${col}" font-size="20" font-weight="700" font-family="'DM Mono',monospace">${scoreVal}</text>
+          <text x="50" y="62" text-anchor="middle" fill="#888" font-size="9" font-family="'DM Mono',monospace">SCORE</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="sheet-grid">
+      ${stats.map(s=>`<div class="stat-card">
+        <div class="sc-label">${s.l}</div>
+        <div class="sc-value"${s.accent?` style="color:${col}"`:""}>${s.v}</div>
+      </div>`).join("")}
+    </div>
+
+    <div class="analyst-section">
+      <div class="section-title">ANALYST BREAKDOWN</div>
+      ${analysts.map(a=>{
+        const pct2 = totalA>0?Math.round(a.c/totalA*100):0;
+        return `<div class="analyst-row">
+          <span class="al-label">${a.l}</span>
+          <div class="al-bar-bg"><div class="al-bar-fill" style="width:${pct2}%;background:${a.col}"></div></div>
+          <span class="al-count" style="color:${a.col}">${a.c}</span>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <div class="range-section">
+      <div class="section-title">PRICE RANGE vs TARGETS</div>
+      <div class="range-chart" style="height:80px">
+        ${d.lo52!=null&&d.hi52!=null?`<div class="range-zone" style="left:${pct(d.lo52)}%;width:${pct(d.hi52)-pct(d.lo52)}%;background:#ffffff08"></div>`:""}
+        ${d.tgtLow!=null&&d.tgtHigh!=null?`<div class="range-zone" style="left:${pct(d.tgtLow)}%;width:${pct(d.tgtHigh)-pct(d.tgtLow)}%;background:${col}1a"></div>`:""}
+        ${pins.map(p=>`<div class="range-pin" style="left:${pct(p.v)}%;background:${p.c}">
+          <span class="range-pin-label" style="color:${p.c}">${fmtP(p.v)}</span>
+        </div>`).join("")}
+        <div class="range-legend" style="position:absolute;bottom:4px;left:8px;right:8px">
+          ${pins.map(p=>`<span class="rl-item" style="color:${p.c}">● ${p.l}</span>`).join("")}
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("sheet").classList.add("open");
+}
+
+function closeSheet() {
+  document.getElementById("overlay").classList.remove("open");
+  document.getElementById("sheet").classList.remove("open");
+  state.selected = null;
+}
+
+// ─── MAIN RENDER ─────────────────────────────────────────────────────────────
+function render() {
+  const filtered = getFiltered();
+  renderSectorPills();
+  renderStats(filtered);
+  renderGrid(filtered);
+
+  // update sort pills
+  document.querySelectorAll("[data-sort]").forEach(b =>
+    b.classList.toggle("active", b.dataset.sort === state.sort));
+  // update color pills
+  document.querySelectorAll("[data-color]").forEach(b =>
+    b.classList.toggle("active", b.dataset.color === state.color));
+}
+
+// ─── EVENT WIRING ────────────────────────────────────────────────────────────
+document.getElementById("search").addEventListener("input", e => {
+  state.search = e.target.value; render();
+});
+document.getElementById("sort-pills").addEventListener("click", e => {
+  if (e.target.dataset.sort) { state.sort = e.target.dataset.sort; render(); }
+});
+document.getElementById("color-pills").addEventListener("click", e => {
+  if (e.target.dataset.color) { state.color = e.target.dataset.color; render(); }
+});
+
+// Swipe-down to close sheet
+let touchStartY = 0;
+document.getElementById("sheet").addEventListener("touchstart", e => {
+  touchStartY = e.touches[0].clientY;
+}, {passive:true});
+document.getElementById("sheet").addEventListener("touchend", e => {
+  if (e.changedTouches[0].clientY - touchStartY > 80) closeSheet();
+}, {passive:true});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+render();
+
+// Toast on first load
+setTimeout(() => {
+  const t = document.getElementById("toast");
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2800);
+}, 800);
+</script>
+</body>
+</html>
